@@ -1,0 +1,11 @@
+#include "cuda.h"
+
+__global__ void kernel0(cudaTextureObject_t tex_A, float p[1900], float q[2100]);
+
+__global__ void kernel1(
+#ifdef DEVICE_TO_DEVICE_COPY
+        float A[2100][1900],
+#else
+	cudaTextureObject_t tex_A,
+#endif
+	float r[2100], float s[1900]);
