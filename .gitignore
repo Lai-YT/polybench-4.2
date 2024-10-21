@@ -1,9 +1,16 @@
 .svn/
 .gdb_history
 *.[c|h]u
+# hand written cuda files are reserved
+!**/hand/*.[c|h]u
 *.txt
 *.csv
 *.cloog
 *.pluto.*
+*.o
 a.out
+.cache/
+.vscode/
+compile_commands.json
+*ncu-rep
 
