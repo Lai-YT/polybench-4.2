@@ -1,0 +1,80 @@
+#ifndef TEXTURE_HU
+#define TEXTURE_HU
+
+#include <cuda_runtime.h>
+
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+
+#define cudaCheckReturn(ret)                               \
+  do {                                                     \
+    cudaError_t cudaCheckReturn_e = (ret);                 \
+    if (cudaCheckReturn_e != cudaSuccess) {                \
+      std::fprintf(stderr, "CUDA error: %s\n",             \
+                   cudaGetErrorString(cudaCheckReturn_e)); \
+      std::fflush(stderr);                                 \
+    }                                                      \
+    assert(cudaCheckReturn_e == cudaSuccess);              \
+  } while (0)
+#define cudaCheckKernel()                \
+  do {                                   \
+    cudaCheckReturn(cudaGetLastError()); \
+  } while (0)
+
+/// A texture object wrapper that contains all the necessary information to use
+/// a texture in CUDA.
+typedef struct {
+  cudaArray_t devPtr;
+  cudaChannelFormatDesc fmtDesc;
+  cudaResourceDesc resDesc;
+  cudaTextureDesc texDesc;
+  cudaTextureObject_t tex;
+} TextureObject_t;
+
+/// @brief
+/// @tparam T The type of the elements in the host data array.
+/// @param texObj The texture object to create, it shouldn't be initialized.
+/// @param data The 2D host data array to copy to be placed in the texture
+/// memory.
+/// @param width The width of the 2D array.
+/// @param height The height of the 2D array.
+/// @note Make sure the `width` and `height` are not exchanged, the correct
+/// order is `T data[height][width]`.
+template <typename T = float>
+void createTextureObject(TextureObject_t *texObj, void *data, size_t width,
+                         size_t height) {
+  std::memset(texObj, 0, sizeof(TextureObject_t));
+
+  texObj->fmtDesc = cudaCreateChannelDesc<float>();
+  cudaCheckReturn(
+      cudaMallocArray(&texObj->devPtr, &texObj->fmtDesc, width, height));
+  // The width in memory in bytes of the 2D array pointed to by devPtr,
+  // including padding. We don't have any padding.
+  cudaCheckReturn(cudaMemcpy2DToArray(texObj->devPtr, 0, 0, data,
+                                      width * sizeof(T), width * sizeof(T),
+                                      height, cudaMemcpyHostToDevice));
+
+  texObj->resDesc.resType = cudaResourceTypeArray;
+  texObj->resDesc.res.array.array = texObj->devPtr;
+
+  // These are the default values for the texture descriptor; can omit them.
+  texObj->texDesc.filterMode = cudaFilterModePoint;
+  texObj->texDesc.addressMode[0] = cudaAddressModeWrap;
+  texObj->texDesc.addressMode[1] = cudaAddressModeWrap;
+  texObj->texDesc.readMode = cudaReadModeElementType;
+  texObj->texDesc.normalizedCoords = 0;
+
+  cudaCheckReturn(cudaCreateTextureObject(&texObj->tex, &texObj->resDesc,
+                                          &texObj->texDesc, NULL));
+}
+
+void destroyTextureObject(TextureObject_t *texObj) {
+  cudaCheckReturn(cudaDestroyTextureObject(texObj->tex));
+  cudaCheckReturn(cudaFreeArray(texObj->devPtr));
+}
+
+#undef cudaCheckReturn
+#undef cudaCheckKernel
+
+#endif  // TEXTURE_HU
