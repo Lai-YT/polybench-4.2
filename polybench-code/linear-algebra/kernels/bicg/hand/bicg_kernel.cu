@@ -1,4 +1,5 @@
 #include "bicg_kernel.hu"
+#include <devintrin.hu>
 
 /**
  * q = A * p
@@ -49,13 +50,7 @@ __global__ void kernel0(cudaTextureObject_t tex_A, float p[1900], float q[2100])
             /* All threads in a warp read the same value of shared_p. */
             // private_q[0] = (private_q[0] + (shared_A[t0][c3] * shared_p[c3]));
 #ifdef INLINE_ASM
-            float a, b, c, d;
-            asm volatile(
-              "tex.2d.v4.f32.s32 {%0, %1, %2, %3}, [%4, {%5, %6}];\n\t"
-              : "=f"(a), "=f"(b), "=f"(c), "=f"(d)  // Output operands
-              : "l"(tex_A), "r"(c1 + c3), "r"(x)  // Input operands
-            );
-            private_q[0] = (private_q[0] + (a * shared_p[c3]));
+            private_q[0] = (private_q[0] + (__tex2Ds32<float>(tex_A, c1 + c3, x) * shared_p[c3]));
 #else
             private_q[0] = (private_q[0] + (tex2D<float>(tex_A, c1 + c3, x) * shared_p[c3]));
 #endif
@@ -67,13 +62,7 @@ __global__ void kernel0(cudaTextureObject_t tex_A, float p[1900], float q[2100])
 #endif
           for (int c3 = 0; c3 <= 31; c3 += 1) {
 #ifdef INLINE_ASM
-            float a, b, c, d;
-            asm volatile(
-              "tex.2d.v4.f32.s32 {%0, %1, %2, %3}, [%4, {%5, %6}];\n\t"
-              : "=f"(a), "=f"(b), "=f"(c), "=f"(d)  // Output operands
-              : "l"(tex_A), "r"(c1 + c3), "r"(x)  // Input operands
-            );
-            private_q[0] = (private_q[0] + (a * shared_p[c3]));
+            private_q[0] = (private_q[0] + (__tex2Ds32<float>(tex_A, c1 + c3, x) * shared_p[c3]));
 #else
             private_q[0] = (private_q[0] + (tex2D<float>(tex_A, c1 + c3, x) * shared_p[c3]));
 #endif
@@ -137,13 +126,7 @@ __global__ void kernel1(
             private_s[0] = (private_s[0] + (shared_r[c3] * A[c1 + c3][x]));
 #else
 #ifdef INLINE_ASM
-            float a, b, c, d;
-            asm volatile(
-              "tex.2d.v4.f32.s32 {%0, %1, %2, %3}, [%4, {%5, %6}];\n\t"
-              : "=f"(a), "=f"(b), "=f"(c), "=f"(d)  // Output operands
-              : "l"(tex_A), "r"(x), "r"(c1 + c3)  // Input operands
-            );
-            private_s[0] = (private_s[0] + (shared_r[c3] * a));
+            private_s[0] = (private_s[0] + (shared_r[c3] * __tex2Ds32<float>(tex_A, x, c1 + c3)));
 #else
             private_s[0] = (private_s[0] + (shared_r[c3] * tex2D<float>(tex_A, x, c1 + c3)));
 #endif
@@ -159,13 +142,7 @@ __global__ void kernel1(
             private_s[0] = (private_s[0] + (shared_r[c3] * A[c1 + c3][x]));
 #else
 #ifdef INLINE_ASM
-            float a, b, c, d;
-            asm volatile(
-              "tex.2d.v4.f32.s32 {%0, %1, %2, %3}, [%4, {%5, %6}];\n\t"
-              : "=f"(a), "=f"(b), "=f"(c), "=f"(d)  // Output operands
-              : "l"(tex_A), "r"(x), "r"(c1 + c3)  // Input operands
-            );
-            private_s[0] = (private_s[0] + (shared_r[c3] * a));
+            private_s[0] = (private_s[0] + (shared_r[c3] * __tex2Ds32<float>(tex_A, x, c1 + c3)));
 #else
             private_s[0] = (private_s[0] + (shared_r[c3] * tex2D<float>(tex_A, x, c1 + c3)));
 #endif
