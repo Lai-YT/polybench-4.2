@@ -1,0 +1,4 @@
+#include "cuda.h"
+
+__global__ void kernel0(cudaTextureObject_t tex_A, float x1[2000], float y_1[2000]);
+__global__ void kernel1(cudaTextureObject_t tex_A, float x2[2000], float y_2[2000]);
