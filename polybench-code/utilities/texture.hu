@@ -74,7 +74,63 @@ void destroyTextureObject(TextureObject_t *texObj) {
   cudaCheckReturn(cudaFreeArray(texObj->devPtr));
 }
 
+/// A surface object wrapper that contains all the necessary information to use
+/// a surface in CUDA.
+typedef struct {
+  cudaArray_t devPtr;
+  size_t width;
+  size_t height;
+  cudaChannelFormatDesc fmtDesc;
+  cudaResourceDesc resDesc;
+  cudaSurfaceObject_t surf;
+} SurfaceObject_t;
+
+/// @brief
+/// @tparam T The type of the elements in the host data array.
+/// @param surfObj The texture object to create, it shouldn't be initialized.
+/// @param data The 2D host data array to copy to be placed in the surface
+/// memory. No copying is done if `data` is `nullptr`.
+/// @param width The width of the 2D array.
+/// @param height The height of the 2D array.
+/// @note Make sure the `width` and `height` are not exchanged, the correct
+/// order is `T data[height][width]`.
+template <typename T = float>
+void createSurfaceObject(SurfaceObject_t *surfObj, void *data, size_t width,
+                         size_t height) {
+  std::memset(surfObj, 0, sizeof(SurfaceObject_t));
+
+  surfObj->fmtDesc = cudaCreateChannelDesc<float>();
+  cudaCheckReturn(cudaMallocArray(&surfObj->devPtr, &surfObj->fmtDesc, width,
+                                  height, cudaArraySurfaceLoadStore));
+  surfObj->width = width;
+  surfObj->height = height;
+  if (data) {
+    // The width in memory in bytes of the 2D array pointed to by devPtr,
+    // including padding. We don't have any padding.
+    cudaCheckReturn(cudaMemcpy2DToArray(surfObj->devPtr, 0, 0, data,
+                                        width * sizeof(T), width * sizeof(T),
+                                        height, cudaMemcpyHostToDevice));
+  }
+
+  surfObj->resDesc.resType = cudaResourceTypeArray;
+  surfObj->resDesc.res.array.array = surfObj->devPtr;
+
+  cudaCheckReturn(cudaCreateSurfaceObject(&surfObj->surf, &surfObj->resDesc));
+}
+
+/// @brief Copy the data from the surface object to the host memory.
+void copyFromSurfaceObject(SurfaceObject_t surfObj, void *dst) {
+  cudaCheckReturn(cudaMemcpy2DFromArray(
+      dst, sizeof(float) * surfObj.width, surfObj.devPtr, 0, 0,
+      surfObj.width * sizeof(float), surfObj.height, cudaMemcpyDeviceToHost));
+}
+
+void destroySurfaceObject(SurfaceObject_t *surfObj) {
+  cudaCheckReturn(cudaDestroySurfaceObject(surfObj->surf));
+  cudaCheckReturn(cudaFreeArray(surfObj->devPtr));
+}
+
 #undef cudaCheckReturn
 #undef cudaCheckKernel
 
-#endif  // TEXTURE_HU
+#endif // TEXTURE_HU
