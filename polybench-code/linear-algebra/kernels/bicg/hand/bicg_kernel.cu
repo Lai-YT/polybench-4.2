@@ -107,7 +107,8 @@ __global__ void kernel1(
           private_s[0] = 0;
         }
         if (x <= 1899) {
-#ifdef LOOP_VERSIONING
+/* NOTE: Global memory access is known to be slower with loop versioning. */
+#if defined(LOOP_VERSIONING) && ! defined(DEVICE_TO_DEVICE_COPY)
         if (2099 - c1 <= 31) {
 #ifdef NOUNROLL
 #pragma nounroll
@@ -132,20 +133,16 @@ __global__ void kernel1(
 #endif
 #endif
           }
-#ifdef LOOP_VERSIONING
+#if defined(LOOP_VERSIONING) && ! defined(DEVICE_TO_DEVICE_COPY)
         } else {
 #ifdef NOUNROLL
 #pragma nounroll
 #endif
           for (int c3 = 0; c3 <= 31; c3 += 1) {
-#ifdef DEVICE_TO_DEVICE_COPY
-            private_s[0] = (private_s[0] + (shared_r[c3] * A[c1 + c3][x]));
-#else
 #ifdef INLINE_ASM
             private_s[0] = (private_s[0] + (shared_r[c3] * __tex2Ds32<float>(tex_A, x, c1 + c3)));
 #else
             private_s[0] = (private_s[0] + (shared_r[c3] * tex2D<float>(tex_A, x, c1 + c3)));
-#endif
 #endif
           }
         }
