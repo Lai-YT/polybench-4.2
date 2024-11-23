@@ -1,0 +1,8 @@
+#include "cuda.h"
+
+__global__ void kernel0(float *a3, float *a4, float *b1, float *b2, cudaTextureObject_t tex_imgIn, cudaSurfaceObject_t surf_y2);
+__global__ void kernel1(float *a1, float *a2, float *b1, float *b2, cudaTextureObject_t tex_imgIn, cudaSurfaceObject_t surf_y1);
+__global__ void kernel2(float *c1, cudaSurfaceObject_t surf_imgOut, cudaSurfaceObject_t surf_y1, cudaSurfaceObject_t surf_y2);
+__global__ void kernel3(float *a7, float *a8, float *b1, float *b2, cudaSurfaceObject_t surf_imgOut, cudaSurfaceObject_t surf_y2);
+__global__ void kernel4(float *a5, float *a6, float *b1, float *b2, cudaSurfaceObject_t surf_imgOut, cudaSurfaceObject_t surf_y1);
+__global__ void kernel5(float *c2, cudaSurfaceObject_t surf_imgOut, cudaSurfaceObject_t surf_y1, cudaSurfaceObject_t surf_y2);
