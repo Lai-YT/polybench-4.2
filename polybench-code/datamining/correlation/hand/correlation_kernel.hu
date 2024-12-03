@@ -1,0 +1,6 @@
+#include "cuda.h"
+
+__global__ void kernel0(cudaSurfaceObject_t corr);
+__global__ void kernel1(float data[1400][1200], float eps, float float_n, float mean[1200], float stddev[1200]);
+__global__ void kernel2(float data[1400][1200], float float_n, float mean[1200], float stddev[1200]);
+__global__ void kernel3(cudaSurfaceObject_t corr, float data[1400][1200]);
